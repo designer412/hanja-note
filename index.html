@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#f6f3eb">
+<title>나만의 한자장</title>
+<link rel="manifest" href="manifest.json">
+<style>
+:root{--ink:#24332d;--muted:#68766f;--paper:#f6f3eb;--card:#fffdf8;--line:#dedfd4;--green:#476b57;--soft:#e7eee6;--red:#a3473d}
+*{box-sizing:border-box}body{margin:0;background:var(--paper);color:var(--ink);font-family:system-ui,-apple-system,"Noto Sans KR",sans-serif}
+header{padding:24px 18px 14px;max-width:720px;margin:auto}h1{font-size:27px;margin:0 0 6px;letter-spacing:-1px}.sub{color:var(--muted);font-size:14px}
+main{max-width:720px;margin:auto;padding:0 14px 100px}.tabs{display:flex;gap:8px;margin:8px 0 16px}.tab{flex:1;border:1px solid var(--line);background:var(--card);border-radius:13px;padding:12px 4px;font-weight:700;color:var(--muted)}.tab.active{background:var(--green);color:white;border-color:var(--green)}
+.card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:17px;margin-bottom:13px;box-shadow:0 3px 12px #26372a08}.hidden{display:none!important}label{display:block;font-size:13px;font-weight:700;margin:12px 0 6px;color:var(--muted)}input,textarea{width:100%;border:1px solid var(--line);background:#fff;border-radius:11px;padding:12px;font:inherit;color:var(--ink)}input:focus,textarea:focus{outline:2px solid #b6c9b9;border-color:var(--green)}
+button{font:inherit;cursor:pointer}.primary,.secondary,.danger{border:0;border-radius:12px;padding:12px 14px;font-weight:750}.primary{background:var(--green);color:#fff}.secondary{background:var(--soft);color:var(--ink)}.danger{background:#f8e8e5;color:var(--red)}.row{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}.row button{flex:1}
+.canvaswrap{border:1px dashed #aab7aa;background:#fff;border-radius:14px;overflow:hidden;touch-action:none}canvas{display:block;width:100%;height:230px;touch-action:none}.hint{font-size:12px;color:var(--muted);line-height:1.55;margin-top:8px}
+.stats{display:flex;gap:10px}.stat{flex:1;background:var(--soft);border-radius:13px;padding:12px}.stat strong{display:block;font-size:23px}.stat span{font-size:12px;color:var(--muted)}
+.word{display:flex;align-items:center;gap:13px}.glyph{font-family:serif;font-size:43px;min-width:58px;text-align:center}.wordinfo{flex:1}.wordinfo strong{font-size:17px}.wordinfo small{display:block;color:var(--muted);margin-top:3px}.empty{text-align:center;padding:26px;color:var(--muted)}
+.quiztitle{font-size:13px;color:var(--muted);font-weight:700}.prompt{font-size:23px;font-weight:800;margin:10px 0 16px;line-height:1.45}.feedback{padding:12px;border-radius:11px;margin-top:10px;font-size:14px}.good{background:#e5f3e7}.bad{background:#fae9e5}.small{font-size:12px;color:var(--muted)}
+footer{max-width:720px;margin:auto;padding:0 18px 28px;color:var(--muted);font-size:12px;line-height:1.6}
+</style>
+</head>
+<body>
+<header><h1>나만의 한자장 ✍️</h1><div class="sub">직접 등록하고, 직접 써 보며 외우는 한자 노트</div></header>
+<main>
+<div class="stats"><div class="stat"><strong id="totalCount">0</strong><span>등록한 한자</span></div><div class="stat"><strong id="wrongCount">0</strong><span>다시 볼 한자</span></div></div>
+<nav class="tabs">
+<button class="tab active" data-tab="register">한자 등록</button><button class="tab" data-tab="list">내 한자</button><button class="tab" data-tab="quiz">암기 시험</button>
+</nav>
+<section id="register" class="panel">
+<div class="card">
+<h2 style="margin:0">새 한자 등록</h2>
+<label>한자 손글씨 입력</label>
+<div class="canvaswrap"><canvas id="registerCanvas" aria-label="한자 쓰기 영역"></canvas></div>
+<div class="row"><button class="secondary" id="clearRegister">다시 쓰기</button></div>
+<label for="glyphInput">인식된 한자 / 정답 한자</label>
+<input id="glyphInput" placeholder="예: 學  (손글씨를 쓴 뒤 여기에 한자를 입력)" maxlength="8">
+<div class="hint">현재 체험판은 손글씨를 그리는 기능을 제공합니다. 자동 문자 인식(OCR)은 아직 연결되지 않아, 쓴 글자를 확인한 뒤 위 칸에 직접 입력해야 해요.</div>
+<label for="soundInput">음</label><input id="soundInput" placeholder="예: 학">
+<label for="meaningInput">뜻</label><input id="meaningInput" placeholder="예: 배우다">
+<label for="noteInput">메모 (선택)</label><input id="noteInput" placeholder="예: 학교, 학습">
+<div class="row"><button class="primary" id="saveWord">한자 저장</button></div>
+<div id="registerMessage" class="small" style="margin-top:10px"></div>
+</div>
+</section>
+<section id="list" class="panel hidden">
+<div class="card"><h2 style="margin-top:0">내 한자 목록</h2><input id="searchInput" placeholder="한자, 음, 뜻으로 검색"><div id="wordList"></div></div>
+</section>
+<section id="quiz" class="panel hidden">
+<div class="card">
+<h2 style="margin:0 0 12px">손글씨 암기 시험</h2>
+<div id="quizStart"><p>등록한 한자의 음과 뜻을 보고 직접 써 보세요.</p><button class="primary" id="startQuiz">시험 시작</button></div>
+<div id="quizArea" class="hidden">
+<div class="quiztitle">다음 한자를 써 보세요</div><div class="prompt" id="quizPrompt"></div>
+<div class="canvaswrap"><canvas id="quizCanvas" aria-label="정답 한자 쓰기 영역"></canvas></div>
+<div class="row"><button class="secondary" id="clearQuiz">다시 쓰기</button><button class="secondary" id="showAnswer">정답 보기</button></div>
+<label for="quizAnswer">내가 쓴 한자 (직접 입력해 확인)</label><input id="quizAnswer" maxlength="8" placeholder="손으로 쓴 뒤, 쓴 한자를 입력">
+<div class="row"><button class="primary" id="checkAnswer">정답 확인</button><button class="secondary" id="nextQuiz">다음 문제</button></div>
+<div id="quizFeedback"></div>
+</div>
+</div>
+</section>
+</main>
+<footer>데이터는 이 브라우저의 저장 공간에 보관됩니다. 브라우저 데이터 삭제 또는 앱 재설치 시 사라질 수 있으니, 중요한 자료는 별도로 백업하세요. 자동 손글씨 인식은 다음 개발 단계에서 추가할 수 있어요.</footer>
+<script>
+const $=id=>document.getElementById(id);
+let words=JSON.parse(localStorage.getItem('hanjaWordsV1')||'[]');
+let currentQuiz=null, wrongIds=JSON.parse(localStorage.getItem('hanjaWrongV1')||'[]');
+function persist(){localStorage.setItem('hanjaWordsV1',JSON.stringify(words));localStorage.setItem('hanjaWrongV1',JSON.stringify(wrongIds));renderAll()}
+function setupCanvas(canvas){
+ const ctx=canvas.getContext('2d');let drawing=false,last=null;
+ function resize(){const rect=canvas.getBoundingClientRect(),dpr=window.devicePixelRatio||1;let old;try{old=canvas.toDataURL()}catch(e){}canvas.width=Math.round(rect.width*dpr);canvas.height=Math.round(230*dpr);ctx.setTransform(dpr,0,0,dpr,0,0);ctx.lineWidth=5;ctx.lineCap='round';ctx.lineJoin='round';ctx.strokeStyle='#24332d';ctx.fillStyle='#fff';ctx.fillRect(0,0,rect.width,230);if(old){const im=new Image();im.onload=()=>ctx.drawImage(im,0,0,rect.width,230);im.src=old}}
+ function pos(e){const r=canvas.getBoundingClientRect();return{x:e.clientX-r.left,y:e.clientY-r.top}}
+ canvas.addEventListener('pointerdown',e=>{e.preventDefault();drawing=true;last=pos(e);canvas.setPointerCapture(e.pointerId);ctx.beginPath();ctx.arc(last.x,last.y,2.5,0,Math.PI*2);ctx.fill()});
+ canvas.addEventListener('pointermove',e=>{if(!drawing)return;e.preventDefault();let p=pos(e);ctx.beginPath();ctx.moveTo(last.x,last.y);ctx.lineTo(p.x,p.y);ctx.stroke();last=p});
+ ['pointerup','pointercancel','lostpointercapture'].forEach(ev=>canvas.addEventListener(ev,()=>{drawing=false;last=null}));
+ function clear(){const r=canvas.getBoundingClientRect();ctx.clearRect(0,0,r.width,230);ctx.fillStyle='#fff';ctx.fillRect(0,0,r.width,230)}
+ resize();return {clear,resize}
+}
+const reg=setupCanvas($('registerCanvas')),quiz=setupCanvas($('quizCanvas'));
+window.addEventListener('resize',()=>{reg.resize();quiz.resize()});
+document.querySelectorAll('.tab').forEach(b=>b.addEventListener('click',()=>{document.querySelectorAll('.tab').forEach(x=>x.classList.toggle('active',x===b));document.querySelectorAll('.panel').forEach(x=>x.classList.toggle('hidden',x.id!==b.dataset.tab));if(b.dataset.tab==='list')renderList()}));
+$('clearRegister').onclick=()=>reg.clear();
+$('saveWord').onclick=()=>{
+ const glyph=$('glyphInput').value.trim(),sound=$('soundInput').value.trim(),meaning=$('meaningInput').value.trim();
+ if(!glyph||!sound||!meaning){$('registerMessage').textContent='한자, 음, 뜻을 모두 입력해 주세요.';return}
+ if(words.some(w=>w.glyph===glyph)){if(!confirm('이미 등록한 한자예요. 같은 한자를 하나 더 등록할까요?'))return}
+ words.unshift({id:Date.now().toString(36)+Math.random().toString(36).slice(2,6),glyph,sound,meaning,note:$('noteInput').value.trim(),created:Date.now(),correct:0,wrong:0});
+ ['glyphInput','soundInput','meaningInput','noteInput'].forEach(id=>$(id).value='');reg.clear();$('registerMessage').textContent='저장했어요! 내 한자 목록에서 확인할 수 있어요.';persist();
+};
+function renderAll(){$('totalCount').textContent=words.length;$('wrongCount').textContent=wrongIds.filter(id=>words.some(w=>w.id===id)).length;renderList()}
+function renderList(){const q=$('searchInput').value.trim().toLowerCase();const arr=words.filter(w=>(w.glyph+w.sound+w.meaning+w.note).toLowerCase().includes(q));const el=$('wordList');if(!arr.length){el.innerHTML='<div class="empty">'+(words.length?'검색 결과가 없어요.':'아직 등록한 한자가 없어요. 위의 한자 등록에서 시작해 보세요.')+'</div>';return}el.innerHTML=arr.map(w=>`<div class="word" style="padding:13px 0;border-bottom:1px solid var(--line)"><div class="glyph">${esc(w.glyph)}</div><div class="wordinfo"><strong>${esc(w.sound)} · ${esc(w.meaning)}</strong><small>${esc(w.note||'메모 없음')} · 정답 ${w.correct||0}회 / 오답 ${w.wrong||0}회</small></div><button class="danger" data-delete="${w.id}">삭제</button></div>`).join('');el.querySelectorAll('[data-delete]').forEach(b=>b.onclick=()=>{if(confirm('이 한자를 삭제할까요?')){words=words.filter(w=>w.id!==b.dataset.delete);wrongIds=wrongIds.filter(id=>id!==b.dataset.delete);persist()}})}
+function esc(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+$('searchInput').addEventListener('input',renderList);
+function nextQuestion(){if(!words.length){$('quizPrompt').textContent='먼저 한자를 등록해 주세요.';return}let pool=words.filter(w=>wrongIds.includes(w.id));if(!pool.length)pool=words;currentQuiz=pool[Math.floor(Math.random()*pool.length)];$('quizPrompt').textContent=currentQuiz.sound+' · '+currentQuiz.meaning;$('quizAnswer').value='';$('quizFeedback').innerHTML='';quiz.clear()}
+$('startQuiz').onclick=()=>{if(!words.length){$('quizStart').innerHTML='<p>먼저 한자 등록 탭에서 한자를 등록해 주세요.</p>';return}$('quizArea').classList.remove('hidden');$('quizStart').classList.add('hidden');nextQuestion()};
+$('clearQuiz').onclick=()=>quiz.clear();
+$('showAnswer').onclick=()=>{if(currentQuiz)$('quizFeedback').innerHTML='<div class="feedback">정답: <strong>'+esc(currentQuiz.glyph)+'</strong></div>'};
+$('checkAnswer').onclick=()=>{if(!currentQuiz)return;const answer=$('quizAnswer').value.trim();if(!answer){$('quizFeedback').innerHTML='<div class="feedback bad">쓴 한자를 입력한 뒤 확인해 주세요.</div>';return}if(answer===currentQuiz.glyph){currentQuiz.correct=(currentQuiz.correct||0)+1;wrongIds=wrongIds.filter(id=>id!==currentQuiz.id);$('quizFeedback').innerHTML='<div class="feedback good">정답이에요! 잘했어요. ✨</div>'}else{currentQuiz.wrong=(currentQuiz.wrong||0)+1;if(!wrongIds.includes(currentQuiz.id))wrongIds.push(currentQuiz.id);$('quizFeedback').innerHTML='<div class="feedback bad">다시 확인해 봐요. 정답은 <strong>'+esc(currentQuiz.glyph)+'</strong> 이에요.</div>'}persist()};
+$('nextQuiz').onclick=nextQuestion;
+if('serviceWorker' in navigator && location.protocol.startsWith('http'))navigator.serviceWorker.register('sw.js').catch(()=>{});
+renderAll();
+</script>
+</body></html>

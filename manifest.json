@@ -1,0 +1,10 @@
+{
+  "name": "나만의 한자장",
+  "short_name": "한자장",
+  "description": "직접 등록하고 손글씨로 복습하는 한자 노트",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#f6f3eb",
+  "theme_color": "#f6f3eb",
+  "lang": "ko"
+}
